@@ -1,4 +1,5 @@
 import {RestResourceRequestError} from '../../error';
+import {ApiVersion} from '../../base_types';
 
 import FakeResource from './fake_resource';
 import FakeResourceWithCustomPrefix from './fake_resource_with_custom_prefix';
@@ -8,12 +9,13 @@ describe('Base REST resource', () => {
   const prefix = '/admin/api/unstable';
   const headers = {'X-Shopify-Access-Token': 'test-access-token'};
   const accessToken = 'test-access-token';
+  const apiVersion = ApiVersion.Unstable;
 
   it('finds resource by id', async () => {
     const body = {fake_resource: {id: 1, attribute: 'attribute'}};
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
-    const got = await FakeResource.find({domain, accessToken, id: 1} as any);
+    const got = await FakeResource.find({domain, accessToken, apiVersion, id: 1} as any);
 
     expect([got!.id, got!.attribute]).toEqual([1, 'attribute']);
     expect({
@@ -31,6 +33,7 @@ describe('Base REST resource', () => {
     const got = await FakeResource.find({
       domain,
       accessToken,
+      apiVersion,
       id: 1,
       params: {param: 'value'},
     } as any);
@@ -55,7 +58,7 @@ describe('Base REST resource', () => {
     };
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
-      const got = await FakeResource.find({domain, accessToken, id: 1} as any);
+    const got = await FakeResource.find({domain, accessToken, apiVersion, id: 1} as any);
 
     expect([got!.id, got!.attribute]).toEqual([1, 'attribute1']);
 
@@ -87,7 +90,7 @@ describe('Base REST resource', () => {
     });
 
     await expect(
-        FakeResource.find({domain, accessToken, id: 1} as any),
+      FakeResource.find({domain, accessToken, apiVersion, id: 1} as any),
     ).rejects.toThrowError(RestResourceRequestError);
 
     expect({
@@ -107,7 +110,7 @@ describe('Base REST resource', () => {
     };
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
-      const got = await FakeResource.all({domain, accessToken});
+    const got = await FakeResource.all({domain, accessToken, apiVersion});
 
     expect([got![0].id, got![0].attribute]).toEqual([1, 'attribute1']);
     expect([got![1].id, got![1].attribute]).toEqual([2, 'attribute2']);
@@ -126,7 +129,7 @@ describe('Base REST resource', () => {
 
     const resource = new FakeResource({});
     resource.attribute = 'attribute';
-    await resource.save(domain, accessToken);
+    await resource.save(domain, accessToken, apiVersion);
 
     expect(resource.id).toBeUndefined();
     expect({
@@ -145,7 +148,7 @@ describe('Base REST resource', () => {
 
     const resource = new FakeResource({});
     resource.attribute = 'attribute';
-      await resource.saveAndUpdate(domain, accessToken);
+      await resource.saveAndUpdate(domain, accessToken, apiVersion);
 
     expect(resource.id).toEqual(1);
     expect({
@@ -167,7 +170,7 @@ describe('Base REST resource', () => {
     const resource = new FakeResource({});
     resource.id = 1;
     resource.attribute = 'attribute';
-      await resource.save(domain, accessToken);
+    await resource.save(domain, accessToken, apiVersion);
 
     expect(resource.id).toEqual(1);
     expect({
@@ -202,7 +205,7 @@ describe('Base REST resource', () => {
     resource.has_one_attribute = child1;
     resource.has_many_attribute = [child2];
 
-      await resource.save(domain, accessToken);
+    await resource.save(domain, accessToken, apiVersion);
 
     expect({
       method: 'PUT',
@@ -219,7 +222,7 @@ describe('Base REST resource', () => {
 
     const resource = new FakeResource({});
     resource.unknown = 'some-value';
-      await resource.save(domain, accessToken);
+    await resource.save(domain, accessToken, apiVersion);
 
     expect({
       method: 'POST',
@@ -239,7 +242,7 @@ describe('Base REST resource', () => {
     const resource = new FakeResource({});
     resource.id = 1;
     resource.has_one_attribute = null;
-      await resource.save(domain, accessToken);
+    await resource.save(domain, accessToken, apiVersion);
 
     expect({
       method: 'PUT',
@@ -256,7 +259,7 @@ describe('Base REST resource', () => {
     const resource = new FakeResource({});
     resource.id = 1;
 
-    await resource.delete(domain, accessToken);
+    await resource.delete(domain, accessToken, apiVersion);
 
     expect({
       method: 'DELETE',
@@ -273,7 +276,7 @@ describe('Base REST resource', () => {
     resource.id = 1;
     resource.other_resource_id = 2;
 
-      await resource.delete(domain, accessToken);
+    await resource.delete(domain, accessToken, apiVersion);
 
     expect({
       method: 'DELETE',
@@ -293,7 +296,7 @@ describe('Base REST resource', () => {
     const resource = new FakeResource({});
     resource.id = 1;
 
-      await expect(resource.delete(domain, accessToken)).rejects.toThrowError(
+    await expect(resource.delete(domain, accessToken, apiVersion)).rejects.toThrowError(
       RestResourceRequestError,
     );
 
@@ -312,6 +315,7 @@ describe('Base REST resource', () => {
     const got = await FakeResource.custom({
       domain,
       accessToken,
+      apiVersion,
       id: 1,
       other_resource_id: 2,
     });
@@ -339,13 +343,14 @@ describe('Base REST resource', () => {
       [JSON.stringify(body), {}],
     );
 
-      await FakeResource.all({domain, accessToken});
+    await FakeResource.all({domain, accessToken, apiVersion});
     expect(FakeResource.NEXT_PAGE_INFO).not.toBeUndefined();
     expect(FakeResource.PREV_PAGE_INFO).toBeUndefined();
 
     await FakeResource.all({
       domain,
       accessToken,
+      apiVersion,
       params: FakeResource.NEXT_PAGE_INFO?.query,
     });
     expect(FakeResource.NEXT_PAGE_INFO).toBeUndefined();
@@ -354,6 +359,7 @@ describe('Base REST resource', () => {
     await FakeResource.all({
       domain,
       accessToken,
+      apiVersion,
       params: FakeResource.PREV_PAGE_INFO?.query,
     });
     expect(FakeResource.NEXT_PAGE_INFO).toBeUndefined();
@@ -385,7 +391,7 @@ describe('Base REST resource', () => {
     };
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
-      const got = await FakeResourceWithCustomPrefix.find({domain, accessToken, id: 1});
+    const got = await FakeResourceWithCustomPrefix.find({domain, accessToken, apiVersion, id: 1});
 
     expect([got!.id, got!.attribute]).toEqual([1, 'attribute']);
     expect({

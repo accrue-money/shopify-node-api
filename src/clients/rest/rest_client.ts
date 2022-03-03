@@ -1,10 +1,8 @@
 import querystring from 'querystring';
 
-import {Context} from '../../context';
-import {ShopifyHeader} from '../../base_types';
+import {ShopifyHeader, ApiVersion} from '../../base_types';
 import {HttpClient} from '../http_client/http_client';
 import {RequestParams, GetRequestParams} from '../http_client/types';
-import * as ShopifyErrors from '../../error';
 
 import {RestRequestReturn, PageInfo} from './types';
 
@@ -12,21 +10,13 @@ class RestClient extends HttpClient {
   private static LINK_HEADER_REGEXP = /<([^<]+)>; rel="([^"]+)"/;
   private static DEFAULT_LIMIT = '50';
 
-  public constructor(domain: string, readonly accessToken?: string) {
+  public constructor(readonly apiVersion: ApiVersion, domain: string, readonly accessToken: string) {
     super(domain);
-
-    if (!Context.IS_PRIVATE_APP && !accessToken) {
-      throw new ShopifyErrors.MissingRequiredArgument(
-        'Missing access token when creating REST client',
-      );
-    }
   }
 
   protected async request(params: RequestParams): Promise<RestRequestReturn> {
     params.extraHeaders = {
-      [ShopifyHeader.AccessToken]: Context.IS_PRIVATE_APP
-        ? Context.API_SECRET_KEY
-        : (this.accessToken as string),
+      [ShopifyHeader.AccessToken]: this.accessToken,
       ...params.extraHeaders,
     };
 
@@ -84,7 +74,7 @@ class RestClient extends HttpClient {
     if (cleanPath.startsWith('/admin')) {
       return `${cleanPath.replace(/\.json$/, '')}.json`;
     } else {
-      return `/admin/api/${Context.API_VERSION}${cleanPath.replace(
+      return `/admin/api/${this.apiVersion}${cleanPath.replace(
         /\.json$/,
         '',
       )}.json`;
