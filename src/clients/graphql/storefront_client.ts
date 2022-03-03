@@ -1,4 +1,3 @@
-import {Context} from '../../context';
 import {ShopifyHeader} from '../../base_types';
 
 import {GraphqlClient, AccessTokenHeader} from './graphql_client';
@@ -6,12 +5,11 @@ import {GraphqlClient, AccessTokenHeader} from './graphql_client';
 export class StorefrontClient extends GraphqlClient {
   protected baseApiPath = '/api';
 
+  //needs refactor
   protected getAccessTokenHeader(): AccessTokenHeader {
     return {
       header: ShopifyHeader.StorefrontAccessToken,
-      value: (Context.IS_PRIVATE_APP
-        ? Context.PRIVATE_APP_STOREFRONT_ACCESS_TOKEN || this.accessToken
-        : this.accessToken) as string,
+      value: this.accessToken,
     };
   }
 }
