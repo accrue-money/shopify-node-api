@@ -1,17 +1,3 @@
-import {AuthScopes} from './auth/scopes';
-
-export interface ContextParams {
-  API_KEY: string;
-  API_SECRET_KEY: string;
-  SCOPES: string[] | AuthScopes;
-  HOST_NAME: string;
-  API_VERSION: ApiVersion;
-  IS_EMBEDDED_APP: boolean;
-  IS_PRIVATE_APP?: boolean;
-  LOG_FILE?: string;
-  USER_AGENT_PREFIX?: string;
-  PRIVATE_APP_STOREFRONT_ACCESS_TOKEN?: string;
-}
 
 export enum ApiVersion {
   April21 = '2021-04',
