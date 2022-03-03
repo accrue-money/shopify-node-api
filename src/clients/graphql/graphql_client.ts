@@ -30,7 +30,6 @@ export class GraphqlClient {
       ...params.extraHeaders,
     };
 
-    //need refactor
     const path = `${this.baseApiPath}/${this.apiVersion}/graphql.json`;
 
     let dataType: DataType.GraphQL | DataType.JSON;
@@ -44,7 +43,6 @@ export class GraphqlClient {
     return this.client.post({path, type: dataType, ...params});
   }
 
-  //need refactor
   protected getAccessTokenHeader(): AccessTokenHeader {
     return {
       header: ShopifyHeader.AccessToken,
