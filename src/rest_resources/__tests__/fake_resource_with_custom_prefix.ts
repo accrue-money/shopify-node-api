@@ -1,9 +1,9 @@
 import Base, {ResourcePath} from '../base';
-import {SessionInterface} from '../../auth/session/types';
 
 interface FakeResourceWithCustomPrefixFindArgs {
-  session: SessionInterface;
   id: string | number;
+  domain: string;
+  accessToken: string;
 }
 
 export default class FakeResourceWithCustomPrefix extends Base {
@@ -24,11 +24,13 @@ export default class FakeResourceWithCustomPrefix extends Base {
   ];
 
   public static find = async ({
-    session,
     id,
+    domain,
+    accessToken
   }: FakeResourceWithCustomPrefixFindArgs): Promise<FakeResourceWithCustomPrefix | null> => {
     const result = await FakeResourceWithCustomPrefix.baseFind({
-      session,
+      domain,
+      accessToken,
       urlIds: {id},
     });
     return result ? (result[0] as FakeResourceWithCustomPrefix) : null;

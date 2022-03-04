@@ -1,6 +1,5 @@
 import http from 'http';
 
-import {Session} from '../auth/session';
 import {GraphqlClient} from '../clients/graphql';
 import {RestClient} from '../clients/rest';
 
@@ -13,11 +12,10 @@ export interface WithSessionParams {
 }
 
 interface WithSessionBaseResponse {
-  session: Session;
 }
 
 export interface RestWithSession extends WithSessionBaseResponse {
-  client: RestClient;
+    client: RestClient;
 }
 
 export interface GraphqlWithSession extends WithSessionBaseResponse {

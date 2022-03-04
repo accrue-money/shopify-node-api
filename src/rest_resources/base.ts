@@ -3,7 +3,6 @@ import {
   RestResourceError,
   RestResourceRequestError,
 } from '../error';
-import {SessionInterface} from '../auth/session/types';
 import {RestClient} from '../clients/rest';
 import {RestRequestReturn} from '../clients/rest/types';
 import {DataType, GetRequestParams} from '../clients/http_client/types';
@@ -28,9 +27,10 @@ export interface ResourcePath {
 }
 
 export interface BaseFindArgs {
-  session: SessionInterface;
   params?: ParamSet;
   urlIds: IdSet;
+  domain: string;
+  accessToken: string;
 }
 
 export interface RequestArgs extends BaseFindArgs {
@@ -41,7 +41,6 @@ export interface RequestArgs extends BaseFindArgs {
 }
 
 export interface BaseConstructorArgs {
-  session: SessionInterface;
   fromData?: Body | null;
 }
 
@@ -70,14 +69,16 @@ class Base {
   protected static PATHS: ResourcePath[] = [];
 
   protected static async baseFind({
-    session,
     urlIds,
     params,
+    domain,
+    accessToken
   }: BaseFindArgs): Promise<Base[]> {
     const response = await this.request({
+      domain,
+      accessToken,
       http_method: 'get',
       operation: 'get',
-      session,
       urlIds,
       params,
     });
@@ -85,19 +86,20 @@ class Base {
     this.NEXT_PAGE_INFO = response.pageInfo?.nextPage ?? undefined;
     this.PREV_PAGE_INFO = response.pageInfo?.prevPage ?? undefined;
 
-    return this.createInstancesFromResponse(session, response.body as Body);
+    return this.createInstancesFromResponse(response.body as Body);
   }
 
   protected static async request({
-    session,
     http_method,
+    domain,
+    accessToken,
     operation,
     urlIds,
     params,
     body,
     entity,
   }: RequestArgs): Promise<RestRequestReturn> {
-    const client = new RestClient(session.shop, session.accessToken);
+    const client = new RestClient(domain, accessToken);
 
     const path = this.getPath({http_method, operation, urlIds, entity});
 
@@ -214,32 +216,30 @@ class Base {
   }
 
   private static createInstancesFromResponse(
-    session: SessionInterface,
     data: Body,
   ): Base[] {
     if (data[this.PLURAL_NAME]) {
       return data[this.PLURAL_NAME].reduce(
         (acc: Base[], entry: Body) =>
-          acc.concat(this.createInstance(session, entry)),
+          acc.concat(this.createInstance(entry)),
         [],
       );
     }
 
     if (data[this.NAME]) {
-      return [this.createInstance(session, data[this.NAME])];
+      return [this.createInstance(data[this.NAME])];
     }
 
     return [];
   }
 
   private static createInstance(
-    session: SessionInterface,
     data: Body,
     prevInstance?: Base,
   ): Base {
     const instance: Base = prevInstance
       ? prevInstance
-      : new (this as any)({session});
+      : new (this as any)({});
 
     if (data) {
       instance.setData(data);
@@ -248,26 +248,25 @@ class Base {
     return instance;
   }
 
-  public session: SessionInterface;
 
-  constructor({session, fromData}: BaseConstructorArgs) {
-    this.session = session;
+  constructor({fromData}: BaseConstructorArgs) {
 
     if (fromData) {
       this.setData(fromData);
     }
   }
 
-  public async save({update = false} = {}): Promise<void> {
+    public async save(domain:string, accessToken: string, {update = false} = {}): Promise<void> {
     const {PRIMARY_KEY, NAME} = this.resource();
     const method = this[PRIMARY_KEY] ? 'put' : 'post';
 
     const data = this.serialize();
 
     const response = await this.resource().request({
+      domain,
+      accessToken,
       http_method: method,
       operation: method,
-      session: this.session,
       urlIds: {},
       body: {[this.resource().getJsonBodyName()]: data},
       entity: this,
@@ -280,15 +279,16 @@ class Base {
     }
   }
 
-  public async saveAndUpdate(): Promise<void> {
-    await this.save({update: true});
+  public async saveAndUpdate(domain: string, accessToken: string): Promise<void> {
+      await this.save(domain, accessToken, {update: true});
   }
 
-  public async delete(): Promise<void> {
+    public async delete(domain: string, accessToken: string): Promise<void> {
     await this.resource().request({
+      domain,
+      accessToken,
       http_method: 'delete',
       operation: 'delete',
-      session: this.session,
       urlIds: {},
       entity: this,
     });
@@ -298,9 +298,6 @@ class Base {
     const {HAS_MANY, HAS_ONE} = this.resource();
 
     return Object.entries(this).reduce((acc: Body, [attribute, value]) => {
-      if (['session'].includes(attribute)) {
-        return acc;
-      }
 
       if (attribute in HAS_MANY && value) {
         acc[attribute] = value.reduce(
@@ -327,13 +324,12 @@ class Base {
         this[attribute] = [];
         val.forEach((entry: Body) => {
           this[attribute].push(
-            new HasManyResource({session: this.session, fromData: entry}),
+            new HasManyResource({fromData: entry}),
           );
         });
       } else if (attribute in HAS_ONE) {
         const HasOneResource: typeof Base = HAS_ONE[attribute];
         this[attribute] = new HasOneResource({
-          session: this.session,
           fromData: val,
         });
       } else {

@@ -1,22 +1,24 @@
 import Base, {ParamSet, ResourcePath} from '../base';
-import {SessionInterface} from '../../auth/session/types';
 
 interface FakeResourceFindArgs {
   params?: ParamSet;
-  session: SessionInterface;
   id: number;
   other_resource_id?: number | null;
+  domain: string;
+  accessToken: string;
 }
 
 interface FakeResourceAllArgs {
   params?: ParamSet;
-  session: SessionInterface;
+  domain: string;
+  accessToken: string;
 }
 
 interface FakeResourceCustomArgs {
-  session: SessionInterface;
   id: number;
   other_resource_id: number;
+  domain: string;
+  accessToken: string;
 }
 
 export default class FakeResource extends Base {
@@ -83,14 +85,16 @@ export default class FakeResource extends Base {
   ];
 
   public static find = async ({
-    session,
+    domain,
+    accessToken,
     params,
     id,
     other_resource_id = null,
     ...otherArgs
   }: FakeResourceFindArgs): Promise<FakeResource | null> => {
     const result = await FakeResource.baseFind({
-      session,
+      domain,
+      accessToken,
       urlIds: {id, other_resource_id},
       params: {...params, ...otherArgs},
     });
@@ -98,25 +102,29 @@ export default class FakeResource extends Base {
   };
 
   public static all = async ({
-    session,
+    domain,
+    accessToken,
     params,
   }: FakeResourceAllArgs): Promise<FakeResource[]> => {
     return FakeResource.baseFind({
-      session,
+      domain,
+      accessToken,
       params,
       urlIds: {},
     });
   };
 
   public static custom = async ({
-    session,
     id,
     other_resource_id,
+    domain,
+    accessToken,
   }: FakeResourceCustomArgs): Promise<Body> => {
     const response = await FakeResource.request({
+      domain,
+      accessToken,
       http_method: 'get',
       operation: 'custom',
-      session,
       urlIds: {id, other_resource_id},
     });
 

@@ -1,4 +1,3 @@
-import {Session} from '../../auth/session';
 import {RestResourceRequestError} from '../../error';
 
 import FakeResource from './fake_resource';
@@ -7,15 +6,14 @@ import FakeResourceWithCustomPrefix from './fake_resource_with_custom_prefix';
 describe('Base REST resource', () => {
   const domain = 'test-shop.myshopify.io';
   const prefix = '/admin/api/unstable';
-  const headers = {'X-Shopify-Access-Token': 'access-token'};
-  const session = new Session('1234', domain, '1234', true);
-  session.accessToken = 'access-token';
+  const headers = {'X-Shopify-Access-Token': 'test-access-token'};
+  const accessToken = 'test-access-token';
 
   it('finds resource by id', async () => {
     const body = {fake_resource: {id: 1, attribute: 'attribute'}};
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
-    const got = await FakeResource.find({id: 1, session} as any);
+    const got = await FakeResource.find({domain, accessToken, id: 1} as any);
 
     expect([got!.id, got!.attribute]).toEqual([1, 'attribute']);
     expect({
@@ -31,8 +29,9 @@ describe('Base REST resource', () => {
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
     const got = await FakeResource.find({
+      domain,
+      accessToken,
       id: 1,
-      session,
       params: {param: 'value'},
     } as any);
 
@@ -56,7 +55,7 @@ describe('Base REST resource', () => {
     };
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
-    const got = await FakeResource.find({id: 1, session} as any);
+      const got = await FakeResource.find({domain, accessToken, id: 1} as any);
 
     expect([got!.id, got!.attribute]).toEqual([1, 'attribute1']);
 
@@ -88,7 +87,7 @@ describe('Base REST resource', () => {
     });
 
     await expect(
-      FakeResource.find({id: 1, session} as any),
+        FakeResource.find({domain, accessToken, id: 1} as any),
     ).rejects.toThrowError(RestResourceRequestError);
 
     expect({
@@ -108,7 +107,7 @@ describe('Base REST resource', () => {
     };
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
-    const got = await FakeResource.all({session});
+      const got = await FakeResource.all({domain, accessToken});
 
     expect([got![0].id, got![0].attribute]).toEqual([1, 'attribute1']);
     expect([got![1].id, got![1].attribute]).toEqual([2, 'attribute2']);
@@ -125,9 +124,9 @@ describe('Base REST resource', () => {
     const responseBody = {fake_resource: {id: 1, attribute: 'attribute'}};
     fetchMock.mockResponseOnce(JSON.stringify(responseBody));
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.attribute = 'attribute';
-    await resource.save();
+    await resource.save(domain, accessToken);
 
     expect(resource.id).toBeUndefined();
     expect({
@@ -144,9 +143,9 @@ describe('Base REST resource', () => {
     const responseBody = {fake_resource: {id: 1, attribute: 'attribute'}};
     fetchMock.mockResponseOnce(JSON.stringify(responseBody));
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.attribute = 'attribute';
-    await resource.saveAndUpdate();
+      await resource.saveAndUpdate(domain, accessToken);
 
     expect(resource.id).toEqual(1);
     expect({
@@ -165,10 +164,10 @@ describe('Base REST resource', () => {
     const responseBody = {fake_resource: {id: 1, attribute: 'attribute'}};
     fetchMock.mockResponseOnce(JSON.stringify(responseBody));
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.id = 1;
     resource.attribute = 'attribute';
-    await resource.save();
+      await resource.save(domain, accessToken);
 
     expect(resource.id).toEqual(1);
     expect({
@@ -191,19 +190,19 @@ describe('Base REST resource', () => {
     };
     fetchMock.mockResponseOnce(JSON.stringify({}));
 
-    const child1 = new FakeResource({session});
+    const child1 = new FakeResource({});
     child1.attribute = 'attribute1';
 
-    const child2 = new FakeResource({session});
+    const child2 = new FakeResource({});
     child2.attribute = 'attribute2';
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.id = 1;
     resource.attribute = 'attribute';
     resource.has_one_attribute = child1;
     resource.has_many_attribute = [child2];
 
-    await resource.save();
+      await resource.save(domain, accessToken);
 
     expect({
       method: 'PUT',
@@ -218,9 +217,9 @@ describe('Base REST resource', () => {
     const expectedRequestBody = {fake_resource: {unknown: 'some-value'}};
     fetchMock.mockResponseOnce(JSON.stringify({}));
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.unknown = 'some-value';
-    await resource.save();
+      await resource.save(domain, accessToken);
 
     expect({
       method: 'POST',
@@ -237,10 +236,10 @@ describe('Base REST resource', () => {
     };
     fetchMock.mockResponseOnce(JSON.stringify({}));
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.id = 1;
     resource.has_one_attribute = null;
-    await resource.save();
+      await resource.save(domain, accessToken);
 
     expect({
       method: 'PUT',
@@ -254,10 +253,10 @@ describe('Base REST resource', () => {
   it('deletes existing resource', async () => {
     fetchMock.mockResponseOnce(JSON.stringify({}));
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.id = 1;
 
-    await resource.delete();
+    await resource.delete(domain, accessToken);
 
     expect({
       method: 'DELETE',
@@ -270,11 +269,11 @@ describe('Base REST resource', () => {
   it('deletes with other resource', async () => {
     fetchMock.mockResponseOnce(JSON.stringify({}));
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.id = 1;
     resource.other_resource_id = 2;
 
-    await resource.delete();
+      await resource.delete(domain, accessToken);
 
     expect({
       method: 'DELETE',
@@ -291,10 +290,10 @@ describe('Base REST resource', () => {
       statusText: 'Not Found',
     });
 
-    const resource = new FakeResource({session});
+    const resource = new FakeResource({});
     resource.id = 1;
 
-    await expect(resource.delete()).rejects.toThrowError(
+      await expect(resource.delete(domain, accessToken)).rejects.toThrowError(
       RestResourceRequestError,
     );
 
@@ -311,7 +310,8 @@ describe('Base REST resource', () => {
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
     const got = await FakeResource.custom({
-      session,
+      domain,
+      accessToken,
       id: 1,
       other_resource_id: 2,
     });
@@ -339,19 +339,21 @@ describe('Base REST resource', () => {
       [JSON.stringify(body), {}],
     );
 
-    await FakeResource.all({session});
+      await FakeResource.all({domain, accessToken});
     expect(FakeResource.NEXT_PAGE_INFO).not.toBeUndefined();
     expect(FakeResource.PREV_PAGE_INFO).toBeUndefined();
 
     await FakeResource.all({
-      session,
+      domain,
+      accessToken,
       params: FakeResource.NEXT_PAGE_INFO?.query,
     });
     expect(FakeResource.NEXT_PAGE_INFO).toBeUndefined();
     expect(FakeResource.PREV_PAGE_INFO).not.toBeUndefined();
 
     await FakeResource.all({
-      session,
+      domain,
+      accessToken,
       params: FakeResource.PREV_PAGE_INFO?.query,
     });
     expect(FakeResource.NEXT_PAGE_INFO).toBeUndefined();
@@ -383,7 +385,7 @@ describe('Base REST resource', () => {
     };
     fetchMock.mockResponseOnce(JSON.stringify(body));
 
-    const got = await FakeResourceWithCustomPrefix.find({id: 1, session});
+      const got = await FakeResourceWithCustomPrefix.find({domain, accessToken, id: 1});
 
     expect([got!.id, got!.attribute]).toEqual([1, 'attribute']);
     expect({
