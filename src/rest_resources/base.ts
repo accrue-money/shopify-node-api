@@ -3,6 +3,7 @@ import {
   RestResourceError,
   RestResourceRequestError,
 } from '../error';
+import {ApiVersion} from '../base_types';
 import {RestClient} from '../clients/rest';
 import {RestRequestReturn} from '../clients/rest/types';
 import {DataType, GetRequestParams} from '../clients/http_client/types';
@@ -31,6 +32,7 @@ export interface BaseFindArgs {
   urlIds: IdSet;
   domain: string;
   accessToken: string;
+  apiVersion: ApiVersion;
 }
 
 export interface RequestArgs extends BaseFindArgs {
@@ -38,6 +40,7 @@ export interface RequestArgs extends BaseFindArgs {
   operation: string;
   body?: Body | null;
   entity?: Base | null;
+  apiVersion: ApiVersion;
 }
 
 export interface BaseConstructorArgs {
@@ -72,7 +75,8 @@ class Base {
     urlIds,
     params,
     domain,
-    accessToken
+    accessToken,
+    apiVersion
   }: BaseFindArgs): Promise<Base[]> {
     const response = await this.request({
       domain,
@@ -81,6 +85,7 @@ class Base {
       operation: 'get',
       urlIds,
       params,
+      apiVersion
     });
 
     this.NEXT_PAGE_INFO = response.pageInfo?.nextPage ?? undefined;
@@ -98,8 +103,9 @@ class Base {
     params,
     body,
     entity,
+    apiVersion
   }: RequestArgs): Promise<RestRequestReturn> {
-    const client = new RestClient(domain, accessToken);
+      const client = new RestClient(apiVersion, domain, accessToken);
 
     const path = this.getPath({http_method, operation, urlIds, entity});
 
@@ -256,7 +262,7 @@ class Base {
     }
   }
 
-    public async save(domain:string, accessToken: string, {update = false} = {}): Promise<void> {
+    public async save(domain:string, accessToken: string, apiVersion: ApiVersion, {update = false} = {}): Promise<void> {
     const {PRIMARY_KEY, NAME} = this.resource();
     const method = this[PRIMARY_KEY] ? 'put' : 'post';
 
@@ -265,6 +271,7 @@ class Base {
     const response = await this.resource().request({
       domain,
       accessToken,
+      apiVersion,
       http_method: method,
       operation: method,
       urlIds: {},
@@ -279,14 +286,15 @@ class Base {
     }
   }
 
-  public async saveAndUpdate(domain: string, accessToken: string): Promise<void> {
-      await this.save(domain, accessToken, {update: true});
+  public async saveAndUpdate(domain: string, accessToken: string, apiVersion: ApiVersion): Promise<void> {
+      await this.save(domain, accessToken, apiVersion, {update: true});
   }
 
-    public async delete(domain: string, accessToken: string): Promise<void> {
+    public async delete(domain: string, accessToken: string, apiVersion: ApiVersion): Promise<void> {
     await this.resource().request({
       domain,
       accessToken,
+      apiVersion,
       http_method: 'delete',
       operation: 'delete',
       urlIds: {},

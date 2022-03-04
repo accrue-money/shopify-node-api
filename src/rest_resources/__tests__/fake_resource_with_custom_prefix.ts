@@ -1,9 +1,11 @@
 import Base, {ResourcePath} from '../base';
+import {ApiVersion} from '../../base_types';
 
 interface FakeResourceWithCustomPrefixFindArgs {
   id: string | number;
   domain: string;
   accessToken: string;
+  apiVersion: ApiVersion;
 }
 
 export default class FakeResourceWithCustomPrefix extends Base {
@@ -26,11 +28,13 @@ export default class FakeResourceWithCustomPrefix extends Base {
   public static find = async ({
     id,
     domain,
-    accessToken
+    accessToken,
+    apiVersion
   }: FakeResourceWithCustomPrefixFindArgs): Promise<FakeResourceWithCustomPrefix | null> => {
     const result = await FakeResourceWithCustomPrefix.baseFind({
       domain,
       accessToken,
+      apiVersion,
       urlIds: {id},
     });
     return result ? (result[0] as FakeResourceWithCustomPrefix) : null;

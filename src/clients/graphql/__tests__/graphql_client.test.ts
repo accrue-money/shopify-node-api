@@ -1,7 +1,5 @@
-import {ShopifyHeader} from '../../../base_types';
+import {ShopifyHeader, ApiVersion} from '../../../base_types';
 import {GraphqlClient} from '../graphql_client';
-import {Context} from '../../../context';
-import * as ShopifyErrors from '../../../error';
 
 const DOMAIN = 'shop.myshopify.io';
 const QUERY = `
@@ -22,7 +20,7 @@ const successResponse = {
 
 describe('GraphQL client', () => {
   it('can return response', async () => {
-    const client: GraphqlClient = new GraphqlClient(DOMAIN, 'bork');
+      const client: GraphqlClient = new GraphqlClient(ApiVersion.Unstable, DOMAIN, 'bork');
     fetchMock.mockResponseOnce(JSON.stringify(successResponse));
 
     const response = await client.query({data: QUERY});
@@ -37,7 +35,7 @@ describe('GraphQL client', () => {
   });
 
   it('merges custom headers with default', async () => {
-    const client: GraphqlClient = new GraphqlClient(DOMAIN, 'bork');
+    const client: GraphqlClient = new GraphqlClient(ApiVersion.Unstable, DOMAIN, 'bork');
     const customHeader: {[key: string]: string} = {
       'X-Glib-Glob': 'goobers',
     };
@@ -58,37 +56,8 @@ describe('GraphQL client', () => {
     }).toMatchMadeHttpRequest();
   });
 
-  it('adapts to private app requests', async () => {
-    Context.IS_PRIVATE_APP = true;
-    Context.initialize(Context);
-
-    const client: GraphqlClient = new GraphqlClient(DOMAIN);
-    fetchMock.mockResponseOnce(JSON.stringify(successResponse));
-
-    await expect(client.query({data: QUERY})).resolves.toEqual(
-      buildExpectedResponse(successResponse),
-    );
-
-    const customHeaders: {[key: string]: string} = {};
-    customHeaders[ShopifyHeader.AccessToken] = 'test_secret_key';
-
-    expect({
-      method: 'POST',
-      domain: DOMAIN,
-      path: '/admin/api/unstable/graphql.json',
-      data: QUERY,
-      headers: customHeaders,
-    }).toMatchMadeHttpRequest();
-  });
-
-  it('fails to instantiate without access token', () => {
-    expect(() => new GraphqlClient(DOMAIN)).toThrow(
-      ShopifyErrors.MissingRequiredArgument,
-    );
-  });
-
   it('can handle queries with variables', async () => {
-    const client: GraphqlClient = new GraphqlClient(DOMAIN, 'bork');
+    const client: GraphqlClient = new GraphqlClient(ApiVersion.Unstable, DOMAIN, 'bork');
     const queryWithVariables = {
       query: `query FirstTwo($first: Int) {
         products(first: $first) {

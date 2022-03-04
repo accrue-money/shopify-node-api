@@ -1,4 +1,5 @@
 import Base, {ParamSet, ResourcePath} from '../base';
+import {ApiVersion} from '../../base_types';
 
 interface FakeResourceFindArgs {
   params?: ParamSet;
@@ -6,12 +7,14 @@ interface FakeResourceFindArgs {
   other_resource_id?: number | null;
   domain: string;
   accessToken: string;
+  apiVersion: ApiVersion;
 }
 
 interface FakeResourceAllArgs {
   params?: ParamSet;
   domain: string;
   accessToken: string;
+  apiVersion: ApiVersion;
 }
 
 interface FakeResourceCustomArgs {
@@ -19,6 +22,7 @@ interface FakeResourceCustomArgs {
   other_resource_id: number;
   domain: string;
   accessToken: string;
+  apiVersion: ApiVersion;
 }
 
 export default class FakeResource extends Base {
@@ -87,6 +91,7 @@ export default class FakeResource extends Base {
   public static find = async ({
     domain,
     accessToken,
+      apiVersion,
     params,
     id,
     other_resource_id = null,
@@ -95,6 +100,7 @@ export default class FakeResource extends Base {
     const result = await FakeResource.baseFind({
       domain,
       accessToken,
+      apiVersion,
       urlIds: {id, other_resource_id},
       params: {...params, ...otherArgs},
     });
@@ -104,11 +110,13 @@ export default class FakeResource extends Base {
   public static all = async ({
     domain,
     accessToken,
+    apiVersion,
     params,
   }: FakeResourceAllArgs): Promise<FakeResource[]> => {
     return FakeResource.baseFind({
       domain,
       accessToken,
+      apiVersion,
       params,
       urlIds: {},
     });
@@ -119,10 +127,12 @@ export default class FakeResource extends Base {
     other_resource_id,
     domain,
     accessToken,
+    apiVersion
   }: FakeResourceCustomArgs): Promise<Body> => {
     const response = await FakeResource.request({
       domain,
       accessToken,
+      apiVersion,
       http_method: 'get',
       operation: 'custom',
       urlIds: {id, other_resource_id},
